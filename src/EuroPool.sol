@@ -30,6 +30,7 @@ contract Staking is Ownable {
     event Staked(address indexed user, uint256 indexed amount);
     event StakeWithdrawn(address indexed user, uint256 indexed amount);
     event RewardsClaimed(address indexed user, uint256 indexed amount);
+    event RewardPoolFunded(uint256 indexed amount);
 
     constructor(address initialOwner, address stakingToken) Ownable(initialOwner) {
         // We assume this contract generates rewards in the same token as the one that is staked.
@@ -113,6 +114,16 @@ contract Staking is Ownable {
         emit StakeWithdrawn(msg.sender, amount);
     }
 
+    /**
+     * @notice Owner of the contract add funds to rewards to the pool
+     */
+    function fundRewardPool(uint256 amount) external onlyOwner {
+        bool success = s_stakingToken.transferFrom(msg.sender, address(this), amount);
+        if (!success) {
+            revert EuroPool__TransferFailed();
+        }
+        emit RewardPoolFunded(amount);
+    }
 
     /**
      * Getter Functions
@@ -123,5 +134,9 @@ contract Staking is Ownable {
 
     function getTotalStaked() public view returns (uint256) {
         return s_totalStaked;
+    }
+
+    function getContractTokenBalance() public view returns (uint256) {
+        return s_stakingToken.balanceOf(address(this));
     }
 }
