@@ -19,6 +19,11 @@ contract Staking is Ownable {
     mapping(address => uint256) private s_balances;
     mapping(address => uint256) private s_rewards;
 
+    uint256 private s_rewardPerStakedToken;
+    uint256 private s_lastUpdateTime;
+
+    mapping(address => uint256) private s_userPaidRewardPerStakedToken;
+
     /**
      * Events
      */
@@ -35,11 +40,41 @@ contract Staking is Ownable {
     /**
      * Modifier Functions
      */
+    modifier updateReward(address account) {
+        s_rewardPerStakedToken = rewardPerStakedToken();
+        s_lastUpdateTime = block.timestamp;
+        s_rewards[account] = earned(account);
+        s_userPaidRewardPerStakedToken[account] = s_rewardPerStakedToken;
+        _;
+    }
+
     modifier moreThanZero(uint256 amount) {
         if (amount == 0) {
             revert EuroPool__NeedsMoreThanZero();
         }
         _;
+    }
+
+    /**
+     * Utility Functions
+     */
+
+    /**
+     * @notice Calculate how much reward a token generates. Based on how long it's been staked and during which "snapshot" period
+     */
+    function rewardPerStakedToken() public view returns (uint256) {
+        if (s_totalStaked == 0) {
+            return s_rewardPerStakedToken;
+        }
+        return s_rewardPerStakedToken + (((block.timestamp - s_lastUpdateTime) * REWARD_RATE * 1e18) / s_totalStaked);
+    }
+
+    /**
+     * @notice How much reward a user has earned
+     */
+    function earned(address account) public view returns (uint256) {
+        return ((s_balances[account] * (rewardPerStakedToken() - s_userPaidRewardPerStakedToken[account])) / 1e18)
+            + s_rewards[account];
     }
 
     /**
@@ -50,7 +85,7 @@ contract Staking is Ownable {
      * @notice Deposit tokens to stake
      * @param amount Number of tokens to stake
      */
-    function stake(uint256 amount) external moreThanZero(amount) {
+    function stake(uint256 amount) external moreThanZero(amount) updateReward(msg.sender) {
         s_totalStaked += amount;
         s_balances[msg.sender] += amount;
 
@@ -66,7 +101,7 @@ contract Staking is Ownable {
      * @notice Withdraw staked tokens
      * @param amount Number of tokens to withdraw
      */
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount) external updateReward(msg.sender) {
         s_totalStaked -= amount;
         s_balances[msg.sender] -= amount;
 
