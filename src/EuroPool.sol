@@ -4,6 +4,9 @@ pragma solidity ^0.8.20;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+error EuroPool__TransferFailed();
+error EuroPool__NeedsMoreThanZero();
+
 contract Staking is Ownable {
     IERC20 public s_stakingToken;
 
@@ -28,6 +31,53 @@ contract Staking is Ownable {
         // This implies that the amout of stakingToken owned by the contract should always be greater than the reward owed to stakers.
         s_stakingToken = IERC20(stakingToken);
     }
+
+    /**
+     * Modifier Functions
+     */
+    modifier moreThanZero(uint256 amount) {
+        if (amount == 0) {
+            revert EuroPool__NeedsMoreThanZero();
+        }
+        _;
+    }
+
+    /**
+     * Action Functions
+     */
+
+    /**
+     * @notice Deposit tokens to stake
+     * @param amount Number of tokens to stake
+     */
+    function stake(uint256 amount) external moreThanZero(amount) {
+        s_totalStaked += amount;
+        s_balances[msg.sender] += amount;
+
+        bool success = s_stakingToken.transferFrom(msg.sender, address(this), amount);
+        if (!success) {
+            revert EuroPool__TransferFailed();
+        }
+
+        emit Staked(msg.sender, amount);
+    }
+
+    /**
+     * @notice Withdraw staked tokens
+     * @param amount Number of tokens to withdraw
+     */
+    function withdraw(uint256 amount) external {
+        s_totalStaked -= amount;
+        s_balances[msg.sender] -= amount;
+
+        bool success = s_stakingToken.transfer(msg.sender, amount);
+        if (!success) {
+            revert EuroPool__TransferFailed();
+        }
+
+        emit StakeWithdrawn(msg.sender, amount);
+    }
+
 
     /**
      * Getter Functions
