@@ -115,6 +115,20 @@ contract Staking is Ownable {
     }
 
     /**
+     * @notice User claims their reward tokens
+     */
+    function claimReward() external updateReward(msg.sender) {
+        uint256 reward = s_rewards[msg.sender];
+        s_rewards[msg.sender] = 0;
+        emit RewardsClaimed(msg.sender, reward);
+
+        bool success = s_stakingToken.transfer(msg.sender, reward);
+        if (!success) {
+            revert EuroPool__TransferFailed();
+        }
+    }
+
+    /**
      * @notice Owner of the contract add funds to rewards to the pool
      */
     function fundRewardPool(uint256 amount) external onlyOwner {
