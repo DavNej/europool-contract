@@ -7,21 +7,22 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 error EuroPool__TransferFailed();
 error EuroPool__NeedsMoreThanZero();
 
-contract Staking is Ownable {
-    IERC20 public s_stakingToken;
+// We assume the contract generates 100 wei per second to be distributed among the stakers
+// The more token staked, the less reward per token
+//
+// We assume the contract generates rewards in the same token as the staked one.
+// This implies that the amount of stakingToken owned by the contract should always be
+// greater than the total staked + total rewards owed to stakers.
 
-    // We assume the contract generate 100 tokens per second to be distributed among the stakers
-    // The more users stake, the less for everyone who is staking
-    uint256 public constant REWARD_RATE = 100;
-
+contract EuroPool is Ownable {
+    IERC20 private s_stakingToken;
+    uint256 private constant REWARD_RATE = 100;
     uint256 private s_totalStaked;
-
-    mapping(address => uint256) private s_balances;
-    mapping(address => uint256) private s_rewards;
-
     uint256 private s_rewardPerStakedToken;
     uint256 private s_lastUpdateTime;
 
+    mapping(address => uint256) private s_balances;
+    mapping(address => uint256) private s_rewards;
     mapping(address => uint256) private s_userPaidRewardPerStakedToken;
 
     /**
@@ -33,8 +34,6 @@ contract Staking is Ownable {
     event RewardPoolFunded(uint256 indexed amount);
 
     constructor(address initialOwner, address stakingToken) Ownable(initialOwner) {
-        // We assume this contract generates rewards in the same token as the one that is staked.
-        // This implies that the amout of stakingToken owned by the contract should always be greater than the reward owed to stakers.
         s_stakingToken = IERC20(stakingToken);
     }
 
@@ -71,7 +70,7 @@ contract Staking is Ownable {
     }
 
     /**
-     * @notice How much reward a user has earned
+     * @notice Calculate how much reward a user has earned
      */
     function earned(address account) public view returns (uint256) {
         return ((s_balances[account] * (rewardPerStakedToken() - s_userPaidRewardPerStakedToken[account])) / 1e18)
@@ -152,5 +151,9 @@ contract Staking is Ownable {
 
     function getContractTokenBalance() public view returns (uint256) {
         return s_stakingToken.balanceOf(address(this));
+    }
+
+    function getRewardRate() public pure returns (uint256) {
+        return REWARD_RATE;
     }
 }
