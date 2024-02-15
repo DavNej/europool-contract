@@ -15,8 +15,10 @@ error EuroPool__NeedsMoreThanZero();
 // greater than the total staked + total rewards owed to stakers.
 
 contract EuroPool is Ownable {
-    IERC20 private s_stakingToken;
     uint256 private constant REWARD_RATE = 100;
+
+    IERC20 private s_stakingToken;
+
     uint256 private s_totalStaked;
     uint256 private s_rewardPerStakedToken;
     uint256 private s_lastUpdateTime;
@@ -155,5 +157,9 @@ contract EuroPool is Ownable {
 
     function getRewardRate() public pure returns (uint256) {
         return REWARD_RATE;
+    }
+
+    function getStakingToken() public view returns (address) {
+        return address(s_stakingToken);
     }
 }

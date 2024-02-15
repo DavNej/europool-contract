@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
-import {MockERC20} from "forge-std/mocks/MockERC20.sol";
+import {MockERC20} from "../test/mock/MockERC20.sol";
 
 contract HelperConfig is Script {
     struct NetworkConfig {
-        address cEUR;
+        address tokenAddress;
     }
 
     NetworkConfig public activeNetworkConfig;
@@ -22,20 +22,21 @@ contract HelperConfig is Script {
     }
 
     function getAlfajoresCeloConfig() public pure returns (NetworkConfig memory) {
-        NetworkConfig memory alfajoresConfig = NetworkConfig({cEUR: 0x10c892A6EC43a53E45D0B916B4b7D383B1b78C0F});
+        NetworkConfig memory alfajoresConfig = NetworkConfig({tokenAddress: 0x10c892A6EC43a53E45D0B916B4b7D383B1b78C0F});
         return alfajoresConfig;
     }
 
     function getOrCreateAnvilLocalConfig() public returns (NetworkConfig memory) {
-        if (activeNetworkConfig.cEUR != address(0)) {
+        if (activeNetworkConfig.tokenAddress != address(0)) {
             return activeNetworkConfig;
         }
 
         vm.startBroadcast();
-        MockERC20 cEUR = new MockERC20();
+        MockERC20 token = new MockERC20();
+
         vm.stopBroadcast();
 
-        NetworkConfig memory anvilLocalConfig = NetworkConfig({cEUR: address(cEUR)});
+        NetworkConfig memory anvilLocalConfig = NetworkConfig({tokenAddress: address(token)});
         return anvilLocalConfig;
     }
 }
