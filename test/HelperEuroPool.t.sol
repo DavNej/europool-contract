@@ -18,6 +18,7 @@ abstract contract HelperEuroPool is Test {
     uint256 constant INITIAL_ALICE_BALANCE = 100 ether;
     uint256 constant INITIAL_BOB_BALANCE = 100 ether;
     uint256 constant INITIAL_CHARLES_BALANCE = 100 ether;
+
     uint256 constant INITIAL_REWARD_POOL_SIZE = 500 ether;
 
     event Staked(address indexed user, uint256 indexed amount);
@@ -47,5 +48,12 @@ abstract contract HelperEuroPool is Test {
 
         assertEq(s_token.balanceOf(address(s_euroPool)), INITIAL_REWARD_POOL_SIZE);
         assertEq(s_token.balanceOf(s_euroPool.owner()), INITIAL_OWNER_BALANCE - INITIAL_REWARD_POOL_SIZE);
+    }
+
+    function stakeFor(address user, uint256 amount) public {
+        vm.startPrank(user);
+        s_token.approve(address(s_euroPool), amount);
+        s_euroPool.stake(amount);
+        vm.stopPrank();
     }
 }
