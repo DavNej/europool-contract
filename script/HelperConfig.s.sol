@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
-import {MockERC20} from "../test/mock/MockERC20.sol";
+import {MockERC20} from "../test/MockERC20.sol";
 
 contract HelperConfig is Script {
     struct NetworkConfig {
