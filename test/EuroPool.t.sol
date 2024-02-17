@@ -135,3 +135,39 @@ contract EuroPoolTest is HelperEuroPool {
         s_euroPool.fundRewardPool(excessAmount);
         vm.stopPrank();
     }
+
+    /**
+     * Getters Tests
+     */
+
+    // Tests the getStakingToken function returns the address of the staking s_token.
+    function testGetStakingToken() public {
+        assertEq(s_euroPool.getStakingToken(), address(s_token));
+    }
+
+    // Tests the getRewardRate function returns the reward rate of the contract.
+    function testGetRewardRate() public {
+        assertEq(s_euroPool.getRewardRate(), 100);
+    }
+
+    // Tests the getTotalStaked function returns the total amount of tokens staked in the contract.
+    function testGetTotalStaked() public {
+        uint256 stakeAmount = 50 ether;
+        stakeFor(ALICE, stakeAmount);
+        assertEq(s_euroPool.getTotalStaked(), stakeAmount);
+    }
+
+    // Tests the getRewardPoolBalance function returns the size of the reward pool.
+    function testGetRewardPoolBalance() public {
+        uint256 stakeAmount = 50 ether;
+        stakeFor(ALICE, stakeAmount);
+        assertEq(s_euroPool.getRewardPoolBalance(), INITIAL_REWARD_POOL_SIZE);
+    }
+
+    // Tests the getStakedBalanceOf function returns the correct balance staked by a user.
+    function testGetStakedBalanceOf() public {
+        uint256 stakeAmount = 50 ether;
+        stakeFor(ALICE, stakeAmount);
+        assertEq(s_euroPool.getStakedBalanceOf(ALICE), stakeAmount);
+    }
+}

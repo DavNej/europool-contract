@@ -143,23 +143,23 @@ contract EuroPool is Ownable {
     /**
      * Getter Functions
      */
-    function getStaked(address account) public view returns (uint256) {
-        return s_balances[account];
-    }
-
-    function getTotalStaked() public view returns (uint256) {
-        return s_totalStaked;
-    }
-
-    function getContractTokenBalance() public view returns (uint256) {
-        return s_stakingToken.balanceOf(address(this));
+    function getStakingToken() public view returns (address) {
+        return address(s_stakingToken);
     }
 
     function getRewardRate() public pure returns (uint256) {
         return REWARD_RATE;
     }
 
-    function getStakingToken() public view returns (address) {
-        return address(s_stakingToken);
+    function getTotalStaked() public view returns (uint256) {
+        return s_totalStaked;
+    }
+
+    function getRewardPoolBalance() public view returns (uint256) {
+        return s_stakingToken.balanceOf(address(this)) - s_totalStaked;
+    }
+
+    function getStakedBalanceOf(address account) public view returns (uint256) {
+        return s_balances[account];
     }
 }
