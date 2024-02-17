@@ -97,11 +97,21 @@ contract EuroPoolTest is HelperEuroPool {
         vm.stopPrank();
     }
 
+    /**
+    /**
+     * Owner Actions Tests
+     */
+
+    // Tests that the contract owner can fund the reward pool successfully.
     function testOwnerCanFundRewardPool() public {
         uint256 amountToFund = 100 ether;
 
         vm.startPrank(s_euroPool.owner());
         s_token.approve(address(s_euroPool), amountToFund);
+
+        vm.expectEmit(true, true, true, true);
+        emit RewardPoolFunded(amountToFund);
+
         s_euroPool.fundRewardPool(amountToFund);
         vm.stopPrank();
 
@@ -116,3 +126,12 @@ contract EuroPoolTest is HelperEuroPool {
         vm.stopPrank();
     }
 
+    // Tests that attempting to fund more than the owner's balance reverts.
+    function testFundMoreThanBalanceReverts() public {
+        uint256 excessAmount = s_token.balanceOf(s_euroPool.owner()) + 1 ether;
+        vm.startPrank(s_euroPool.owner());
+        s_token.approve(address(s_euroPool), excessAmount);
+        vm.expectRevert();
+        s_euroPool.fundRewardPool(excessAmount);
+        vm.stopPrank();
+    }
