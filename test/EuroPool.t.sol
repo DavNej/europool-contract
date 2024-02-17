@@ -98,6 +98,84 @@ contract EuroPoolTest is HelperEuroPool {
     }
 
     /**
+     * Withdrawal Functionality Tests
+     */
+
+    // Verifies that a user can withdraw their staked tokens and the correct amount is returned.
+    function testSuccessfulWithdrawal() public {
+        uint256 stakeAmount = 50 ether;
+        uint256 initialBalanceAlice = s_token.balanceOf(ALICE);
+        uint256 initialTotalStaked = s_euroPool.getTotalStaked();
+
+        // Alice stakes tokens
+        stakeFor(ALICE, stakeAmount);
+        assertEq(s_euroPool.getStakedBalanceOf(ALICE), stakeAmount);
+
+        // Alice withdraws the staked tokens
+        vm.startPrank(ALICE);
+        vm.expectEmit(true, true, true, true);
+        emit StakeWithdrawn(ALICE, stakeAmount);
+        s_euroPool.withdraw(stakeAmount);
+        vm.stopPrank();
+
+        assertEq(s_token.balanceOf(ALICE), initialBalanceAlice, "Alice's balance should be restored after withdrawal");
+        assertEq(s_euroPool.getTotalStaked(), initialTotalStaked, "Total staked should be unchanged");
+    }
+
+    // Checks if withdrawing tokens correctly updates the user's balance and the total staked amount.
+    function testWithdrawUpdatesUserBalanceAndTotalStaked() public {
+        uint256 stakeAmountAlice = 30 ether;
+        uint256 stakeAmountBob = 20 ether;
+
+        // Initial checks
+        uint256 initialTotalStaked = s_euroPool.getTotalStaked();
+
+        uint256 initialStakedAlice = s_euroPool.getStakedBalanceOf(ALICE);
+        uint256 initialStakedBob = s_euroPool.getStakedBalanceOf(BOB);
+
+        uint256 initialBalanceAlice = s_token.balanceOf(ALICE);
+        uint256 initialBalanceBob = s_token.balanceOf(BOB);
+
+        // Stake tokens
+        stakeFor(ALICE, stakeAmountAlice);
+        stakeFor(BOB, stakeAmountBob);
+        assertEq(s_euroPool.getStakedBalanceOf(ALICE), initialStakedAlice + stakeAmountAlice);
+        assertEq(s_euroPool.getStakedBalanceOf(BOB), initialStakedBob + stakeAmountBob);
+        assertEq(s_euroPool.getTotalStaked(), initialTotalStaked + stakeAmountAlice + stakeAmountBob);
+
+        // Withdraw staked tokens
+        vm.startPrank(ALICE);
+        s_euroPool.withdraw(stakeAmountAlice);
+        vm.stopPrank();
+
+        vm.startPrank(BOB);
+        s_euroPool.withdraw(stakeAmountBob);
+        vm.stopPrank();
+
+        // Verifying balances
+        assertEq(s_euroPool.getStakedBalanceOf(ALICE), initialStakedAlice);
+        assertEq(s_euroPool.getStakedBalanceOf(BOB), initialStakedBob);
+        assertEq(s_euroPool.getTotalStaked(), initialTotalStaked);
+
+        assertEq(s_token.balanceOf(ALICE), initialBalanceAlice, "Alice's balance should be restored after withdrawal");
+        assertEq(s_token.balanceOf(BOB), initialBalanceBob, "Bob's balance should be restored after withdrawal");
+
+        assertEq(s_euroPool.getTotalStaked(), initialTotalStaked, "Total staked should be unchanged");
+    }
+
+    // Tests that trying to withdraw more than the staked amount reverts.
+    function testWithdrawMoreThanStakedReverts() public {
+        uint256 stakeAmount = 50 ether;
+        uint256 withdrawAmount = stakeAmount + 10 ether;
+
+        stakeFor(ALICE, stakeAmount);
+
+        // Alice attempts to withdraw more than she has staked
+        vm.startPrank(ALICE);
+        vm.expectRevert();
+        s_euroPool.withdraw(withdrawAmount);
+        vm.stopPrank();
+    }
     /**
      * Owner Actions Tests
      */
