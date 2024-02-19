@@ -56,4 +56,11 @@ abstract contract HelperEuroPool is Test {
         s_euroPool.stake(amount);
         vm.stopPrank();
     }
+
+    function withdrawFor(address user, uint256 amount) public {
+        vm.startPrank(user);
+        s_token.approve(address(s_euroPool), amount);
+        s_euroPool.withdraw(amount);
+        vm.stopPrank();
+    }
 }

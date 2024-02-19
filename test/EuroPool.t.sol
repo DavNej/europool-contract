@@ -176,6 +176,45 @@ contract EuroPoolTest is HelperEuroPool {
         s_euroPool.withdraw(withdrawAmount);
         vm.stopPrank();
     }
+
+    /**
+     * Reward Functionality Tests
+     */
+
+    // Tests that a user can claim their rewards successfully.
+    function testSuccessfulRewardClaim() public {
+        uint256 initialBalanceAlice = s_token.balanceOf(ALICE);
+        uint256 stakeAmount = 50 ether;
+        stakeFor(ALICE, stakeAmount);
+
+        uint256 timeElapsed = 1 hours;
+        vm.warp(block.timestamp + timeElapsed);
+
+        uint256 expectedRewards = s_euroPool.getRewardsOf(ALICE);
+
+        vm.prank(ALICE);
+        vm.expectEmit(true, true, true, true);
+        emit RewardsClaimed(ALICE, expectedRewards);
+        s_euroPool.claimReward();
+
+        assertEq(
+            s_token.balanceOf(ALICE),
+            initialBalanceAlice - stakeAmount + expectedRewards,
+            "Alice's balance did not increase by the expected rewards amount."
+        );
+
+        // Verify Alice's rewards are reset to zero
+        assertEq(s_euroPool.getRewardsOf(ALICE), 0, "Alice's rewards were not reset after claiming.");
+    }
+
+    // Checks that attempting to claim rewards when there are none reverts appropriately.
+    function testClaimZeroRewardsReverts() public {
+        vm.startPrank(ALICE);
+        vm.expectRevert();
+        s_euroPool.claimReward();
+        vm.stopPrank();
+    }
+
     /**
      * Owner Actions Tests
      */
@@ -215,6 +254,100 @@ contract EuroPoolTest is HelperEuroPool {
     }
 
     /**
+     * Utility and Modifier Tests
+     */
+
+    // Tests the rewardPerStakedToken function for accuracy in various scenarios.
+    function testRewardPerStakedTokenCalculation() public {
+        uint256 stakeAmount = 55 ether;
+        uint256 rewardRate = s_euroPool.getRewardRate();
+        uint256 timeElapsed = 1 hours;
+
+        stakeFor(ALICE, stakeAmount);
+        vm.warp(block.timestamp + timeElapsed);
+
+        uint256 actualRewardPerToken = s_euroPool.rewardPerStakedToken();
+        uint256 expectedRewardPerToken = (timeElapsed * rewardRate * 1e18) / (stakeAmount);
+
+        assertEq(actualRewardPerToken, expectedRewardPerToken, "Reward per staked token calculation mismatch.");
+    }
+
+    // Verifies that the earned function accurately calculates the amount of rewards earned by a user.
+    function testEarnedCalculation() public {
+        uint256 stakeAmountAlice = 50 ether;
+        uint256 stakeAmountBob = 30 ether;
+        uint256 stakeAmountCharles = 20 ether;
+
+        // Alice stakes tokens
+        stakeFor(ALICE, stakeAmountAlice);
+        uint256 timeElapsedForAlice = 100 seconds;
+        vm.warp(block.timestamp + timeElapsedForAlice);
+
+        uint256 expectedRewardsRateFirst = s_euroPool.rewardPerStakedToken();
+
+        // Bob stakes tokens after Alice
+        stakeFor(BOB, stakeAmountBob);
+        uint256 timeElapsedForBob = 100 seconds;
+        vm.warp(block.timestamp + timeElapsedForBob);
+
+        uint256 expectedRewardsRateSecond = s_euroPool.rewardPerStakedToken();
+
+        // Charles stakes tokens after Bob
+        stakeFor(CHARLES, stakeAmountCharles);
+        uint256 timeElapsedForCharles = 100 seconds;
+        vm.warp(block.timestamp + timeElapsedForCharles);
+
+        uint256 expectedRewardsRateThird = s_euroPool.rewardPerStakedToken();
+
+        uint256 expectedRewardsAlice = (
+            (expectedRewardsRateFirst) + (expectedRewardsRateSecond - expectedRewardsRateFirst)
+                + (expectedRewardsRateThird - expectedRewardsRateSecond)
+        ) * stakeAmountAlice / 1e18;
+        assertEq(s_euroPool.earned(ALICE), expectedRewardsAlice, "Alice's earned rewards calculation mismatch");
+
+        uint256 expectedRewardsBob = (
+            (expectedRewardsRateSecond - expectedRewardsRateFirst)
+                + (expectedRewardsRateThird - expectedRewardsRateSecond)
+        ) * stakeAmountBob / 1e18;
+        assertEq(s_euroPool.earned(BOB), expectedRewardsBob, "Bob's earned rewards calculation mismatch");
+
+        uint256 expectedRewardsCharles =
+            (expectedRewardsRateThird - expectedRewardsRateSecond) * stakeAmountCharles / 1e18;
+        assertEq(s_euroPool.earned(CHARLES), expectedRewardsCharles, "Charles's earned rewards calculation mismatch");
+    }
+
+    // Specifically tests the effects of the updateReward and moreThanZero modifiers on staking and withdrawing functionality
+    function testModifiersEffectOnStakingAndWithdrawing() public {
+        uint256 stakeAmount = 50 ether;
+
+        // Test updateReward modifier by checking rewards before and after staking
+        uint256 initialRewards = s_euroPool.getRewardsOf(ALICE);
+        stakeFor(ALICE, stakeAmount);
+        vm.warp(block.timestamp + 100 seconds);
+        assertTrue(s_euroPool.getRewardsOf(ALICE) > initialRewards, "Rewards not updated after staking");
+
+        // Test moreThanZero modifier by attempting to stake 0 and expecting a revert
+        vm.startPrank(ALICE);
+        s_token.approve(address(s_euroPool), 0);
+        vm.expectRevert(EuroPool__NeedsMoreThanZero.selector);
+        s_euroPool.stake(0);
+        vm.stopPrank();
+
+        // Test moreThanZero modifier by attempting to withdraw 0 and expecting a revert
+        vm.startPrank(ALICE);
+        vm.expectRevert(EuroPool__NeedsMoreThanZero.selector);
+        s_euroPool.withdraw(0);
+        vm.stopPrank();
+
+        // Test updateReward modifier by checking rewards before and after withdrawing
+        uint256 withdrawAmount = 20 ether;
+        initialRewards = s_euroPool.getRewardsOf(ALICE);
+        vm.warp(block.timestamp + 100 seconds);
+        withdrawFor(ALICE, withdrawAmount);
+        assertTrue(s_euroPool.getRewardsOf(ALICE) > initialRewards, "Rewards not updated after withdrawal");
+    }
+
+    /**
      * Getters Tests
      */
 
@@ -247,5 +380,18 @@ contract EuroPoolTest is HelperEuroPool {
         uint256 stakeAmount = 50 ether;
         stakeFor(ALICE, stakeAmount);
         assertEq(s_euroPool.getStakedBalanceOf(ALICE), stakeAmount);
+    }
+
+    // Tests the getRewardsOf function returns the correct reward owned by a user.
+    function testGetRewardsOf() public {
+        uint256 stakeAmount = 50 ether;
+        stakeFor(ALICE, stakeAmount);
+
+        vm.warp(block.timestamp + 100 seconds);
+
+        uint256 expectedRewardsRate = s_euroPool.rewardPerStakedToken();
+        uint256 expectedRewards = expectedRewardsRate * stakeAmount / 1e18;
+
+        assertEq(s_euroPool.getRewardsOf(ALICE), expectedRewards);
     }
 }

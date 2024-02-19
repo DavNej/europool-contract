@@ -33,7 +33,6 @@ contract HelperConfig is Script {
 
         vm.startBroadcast();
         MockERC20 token = new MockERC20();
-
         vm.stopBroadcast();
 
         NetworkConfig memory anvilLocalConfig = NetworkConfig({tokenAddress: address(token)});
