@@ -14,5 +14,4 @@ docs/
 .env
 
 /broadcast
-/lib
 .DS_Store

@@ -7,23 +7,29 @@ EuroPool is a simple staking application. Deposit, wait, earn
 ### Install
 
 ```shell
-$ forge install OpenZeppelin/openzeppelin-contracts --no-commit
+$ make install
 ```
 
 ### Run local chain
 
 ```shell
-$ anvil
+$ make anvil
 ```
 
 ### Run Tests
 
 ```shell
-$ forge test
+$ make test
 ```
 
 ### Deploy
 
 ```shell
-$ forge script script/DeployEuroPool.s.sol:DeployEuroPool --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ make deploy-local
+```
+
+or
+
+```shell
+$ make deploy-alfajores
 ```
