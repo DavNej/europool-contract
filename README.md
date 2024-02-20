@@ -4,6 +4,12 @@ EuroPool is a simple staking application. Deposit, wait, earn
 
 ## Usage
 
+### Setup
+
+```shell
+$ make all
+```
+
 ### Install
 
 ```shell
@@ -25,11 +31,11 @@ $ make test
 ### Deploy
 
 ```shell
-$ make deploy-local
+$ make local-deploy
 ```
 
 or
 
 ```shell
-$ make deploy-alfajores
+$ make alfajores-deploy
 ```
