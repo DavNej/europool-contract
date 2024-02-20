@@ -6,11 +6,12 @@ import {HelperConfig} from "../script/HelperConfig.s.sol";
 import {MockERC20} from "../test/MockERC20.sol";
 import {EuroPool} from "../src/EuroPool.sol";
 
-contract DeployEuroPool is Script, HelperConfig {
+contract DeployEuroPool is Script {
     address public tokenAddress;
 
     function run() external returns (EuroPool) {
-        tokenAddress = activeNetworkConfig.tokenAddress;
+        HelperConfig helperConfig = new HelperConfig();
+        tokenAddress = helperConfig.activeNetworkConfig();
 
         vm.startBroadcast();
         EuroPool euroPool = new EuroPool(msg.sender, tokenAddress);
