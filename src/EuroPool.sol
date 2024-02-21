@@ -8,13 +8,6 @@ error EuroPool__TransferFailed();
 error EuroPool__NeedsMoreThanZero();
 error EuroPool__NoRewardsToClaim();
 
-// We assume the contract generates 100 wei per second to be distributed among the stakers
-// The more token staked, the less reward per token
-//
-// We assume the contract generates rewards in the same token as the staked one.
-// This implies that the amount of stakingToken owned by the contract should always be
-// greater than the total staked + total rewards owed to stakers.
-
 contract EuroPool is Ownable {
     uint256 private constant REWARD_RATE = 100; // per second
 

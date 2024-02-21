@@ -13,6 +13,7 @@ clean :; forge clean
 # Remove modules
 remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "modules"
 
+# Install Dependencies
 install :; forge install foundry-rs/forge-std@v1.5.3 --no-commit && forge install OpenZeppelin/openzeppelin-contracts@v5.0.1 --no-commit
 
 # Update Dependencies
@@ -41,7 +42,6 @@ alfajores-deploy:
 	--rpc-url $(ALFAJORES_RPC_URL) --private-key $(ALFAJORES_DEPLOYER_PRIVATE_KEY) \
 	--broadcast \
 	-vvvv
-# --verify --ethscan-api-key $(ALFAJORES_API_KEY)
 
 alfajores-fund-europool:
 	@echo "Funding EuroPool reward pool with tokens..."
