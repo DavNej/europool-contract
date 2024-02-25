@@ -32,7 +32,7 @@ anvil :; anvil -m 'test test test test test test test test test test test junk' 
 local-deploy:
 	@echo "Deploying contracts locally..."
 	@forge script script/DeployEuroPool.s.sol \
-	--rpc-url $(ANVIL_RPC_URL) --private-key $(ANVIL_DEFAULT_PRIVATE_KEY) \
+	--rpc-url $(ANVIL_RPC_URL) --private-key $(ANVIL_DEPLOYER_PRIVATE_KEY) \
 	--broadcast \
 	-vvvv
 
@@ -43,6 +43,20 @@ alfajores-deploy:
 	--broadcast \
 	-vvvv
 
+mumbai-deploy:
+	@echo "Deploying contracts to Mumbai..."
+	@forge script script/DeployEuroPool.s.sol \
+	--rpc-url $(MUMBAI_RPC_URL) --private-key $(MUMBAI_DEPLOYER_PRIVATE_KEY) \
+	--broadcast \
+	-vvvv
+
+sepolia-deploy:
+	@echo "Deploying contracts to Sepolia..."
+	@forge script script/DeployEuroPool.s.sol \
+	--rpc-url $(SEPOLIA_RPC_URL) --private-key $(SEPOLIA_DEPLOYER_PRIVATE_KEY) \
+	--broadcast \
+	-vvvv
+
 alfajores-fund-europool:
 	@echo "Funding EuroPool reward pool with tokens..."
 	@forge script script/FundEuroPool.s.sol \
@@ -50,18 +64,18 @@ alfajores-fund-europool:
 	--broadcast \
 	-vvvv
 
-alfajores-ceur-balance-of-deployer:
+alfajores-token-balance-of-deployer:
 	@echo "Get token balance of deployer $(ALFAJORES_DEPLOYER_ADDRESS)..."
 	@cast call \
 	--rpc-url $(ALFAJORES_RPC_URL) \
-	$(ALFAJORES_CEUR_ADDRESS) \
+	$(ALFAJORES_TOKEN_ADDRESS) \
 	"balanceOf(address)" $(ALFAJORES_DEPLOYER_ADDRESS) \
 	-- -vvvv
 
-alfajores-ceur-balance-of-europool:
+alfajores-token-balance-of-europool:
 	@echo "Get token balance of europool $(ALFAJORES_EUROPOOL_ADDRESS)..."
 	@cast call \
 	--rpc-url $(ALFAJORES_RPC_URL) \
-	$(ALFAJORES_CEUR_ADDRESS) \
+	$(ALFAJORES_TOKEN_ADDRESS) \
 	"balanceOf(address)" $(ALFAJORES_EUROPOOL_ADDRESS) \
 	-- -vvvv
