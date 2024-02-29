@@ -2,80 +2,83 @@
 
 help:
 	@echo "Usage:"
-	@echo "  make deploy-local"
-	@echo "  make deploy-alphajores"
+	@echo '  make deploy ARGS="--network sepolia"'
+	@echo '  make fund-europool ARGS="--network mumbai"'
+	@echo '  make token-balance-of-deployer ARGS="--network sepolia"'
+	@echo '  make token-balance-of-europool'
+	@echo ""
+	@echo "  Supported networks: sepolia, mumbai, alfajores, local"
 
-all: clean remove install update build test
-
-# Clean the repo
+all: clean remove install update build
 clean :; forge clean
-
-# Remove modules
 remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "modules"
-
-# Install Dependencies
 install :; forge install foundry-rs/forge-std@v1.5.3 --no-commit && forge install OpenZeppelin/openzeppelin-contracts@v5.0.1 --no-commit
-
-# Update Dependencies
 update:; forge update
-
-# Compile contracts
 build:
 	@echo "Building contracts..."
 	@forge build
 
-test :; forge test
-snapshot :; forge snapshot
-format :; forge fmt
-anvil :; anvil -m 'test test test test test test test test test test test junk' --steps-tracing --block-time 1
+## Launch local chain
+anvil:
+	@anvil -m 'test test test test test test test test test test test junk' --chain-id 1337
 
-local-deploy:
-	@echo "Deploying contracts locally..."
-	@forge script script/DeployEuroPool.s.sol \
-	--rpc-url $(ANVIL_RPC_URL) --private-key $(ANVIL_DEPLOYER_PRIVATE_KEY) \
-	--broadcast \
-	-vvvv
 
-alfajores-deploy:
-	@echo "Deploying contracts to Alfajores..."
-	@forge script script/DeployEuroPool.s.sol \
-	--rpc-url $(ALFAJORES_RPC_URL) --private-key $(ALFAJORES_DEPLOYER_PRIVATE_KEY) \
-	--broadcast \
-	-vvvv
+## Deploy rules
+## Default args (local anvil)
+NETWORK_NAME := "Anvil"
+NETWORK_ARGS := "--rpc-url $(ANVIL_RPC_URL) --private-key $(ANVIL_DEPLOYER_PRIVATE_KEY)"
+VERIFY_ARGS := ""
 
-mumbai-deploy:
-	@echo "Deploying contracts to Mumbai..."
-	@forge script script/DeployEuroPool.s.sol \
-	--rpc-url $(MUMBAI_RPC_URL) --private-key $(MUMBAI_DEPLOYER_PRIVATE_KEY) \
-	--broadcast \
-	-vvvv
+ifeq ($(findstring --network alfajores,$(ARGS)),--network alfajores)
+	NETWORK_NAME := Alfajores
+	NETWORK_ARGS := --rpc-url $(ALFAJORES_RPC_URL) --private-key $(ALFAJORES_DEPLOYER_PRIVATE_KEY)
+	VERIFY_ARGS := "--verify --etherscan-api-key $(CELOSCAN_API_KEY)"
+	
+	RPC_URL := $(ALFAJORES_RPC_URL)
+	TOKEN_ADDRESS := $(ALFAJORES_TOKEN_ADDRESS)
+	EUROPOOL_ADDRESS := $(ALFAJORES_EUROPOOL_ADDRESS)
+	DEPLOYER_ADDRESS := $(ALFAJORES_DEPLOYER_ADDRESS)
+endif
 
-sepolia-deploy:
-	@echo "Deploying contracts to Sepolia..."
-	@forge script script/DeployEuroPool.s.sol \
-	--rpc-url $(SEPOLIA_RPC_URL) --private-key $(SEPOLIA_DEPLOYER_PRIVATE_KEY) \
-	--broadcast \
-	-vvvv
+ifeq ($(findstring --network mumbai,$(ARGS)),--network mumbai)
+	NETWORK_NAME := "Mumbai"
+	NETWORK_ARGS := --rpc-url $(MUMBAI_RPC_URL) --private-key $(MUMBAI_DEPLOYER_PRIVATE_KEY)
+	VERIFY_ARGS := "--verify --etherscan-api-key $(POLYGONSCAN_API_KEY)"
 
-alfajores-fund-europool:
-	@echo "Funding EuroPool reward pool with tokens..."
-	@forge script script/FundEuroPool.s.sol \
-	--rpc-url $(ALFAJORES_RPC_URL) --private-key $(ALFAJORES_DEPLOYER_PRIVATE_KEY) \
-	--broadcast \
-	-vvvv
+	RPC_URL := $(MUMBAI_RPC_URL)
+	TOKEN_ADDRESS := $(MUMBAI_TOKEN_ADDRESS)
+	EUROPOOL_ADDRESS := $(MUMBAI_EUROPOOL_ADDRESS)
+	DEPLOYER_ADDRESS := $(MUMBAI_DEPLOYER_ADDRESS)
+endif
 
-alfajores-token-balance-of-deployer:
-	@echo "Get token balance of deployer $(ALFAJORES_DEPLOYER_ADDRESS)..."
-	@cast call \
-	--rpc-url $(ALFAJORES_RPC_URL) \
-	$(ALFAJORES_TOKEN_ADDRESS) \
-	"balanceOf(address)" $(ALFAJORES_DEPLOYER_ADDRESS) \
+ifeq ($(findstring --network sepolia,$(ARGS)),--network sepolia)
+	NETWORK_NAME := "Sepolia"
+	NETWORK_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --private-key $(SEPOLIA_DEPLOYER_PRIVATE_KEY)
+	VERIFY_ARGS := "--verify --etherscan-api-key $(ETHERSCAN_API_KEY)"
+
+	RPC_URL := $(SEPOLIA_RPC_URL)
+	TOKEN_ADDRESS := $(SEPOLIA_TOKEN_ADDRESS)
+	EUROPOOL_ADDRESS := $(SEPOLIA_EUROPOOL_ADDRESS)
+	DEPLOYER_ADDRESS := $(SEPOLIA_DEPLOYER_ADDRESS)
+endif
+
+deploy:
+	@echo "Deploying contracts to $(NETWORK_NAME)..."
+	@forge script script/DeployEuroPool.s.sol $(NETWORK_ARGS) --broadcast $(VERIFY_ARGS) -vvvv
+
+## Fund EuroPool rules
+fund-europool:
+	@echo "Funding $(NETWORK_NAME) EuroPool reward pool with tokens..."
+	@forge script script/FundEuroPool.s.sol $(NETWORK_ARGS) --broadcast -vvvv
+
+## Balance rules
+token-balance-of-deployer:
+	@echo $(ARGS)
+	@echo "Get token balance of deployer $(DEPLOYER_ADDRESS) on $(NETWORK_NAME)..."
+	@cast call --rpc-url $(RPC_URL) $(TOKEN_ADDRESS) "balanceOf(address)" $(DEPLOYER_ADDRESS) \
 	-- -vvvv
 
-alfajores-token-balance-of-europool:
-	@echo "Get token balance of europool $(ALFAJORES_EUROPOOL_ADDRESS)..."
-	@cast call \
-	--rpc-url $(ALFAJORES_RPC_URL) \
-	$(ALFAJORES_TOKEN_ADDRESS) \
-	"balanceOf(address)" $(ALFAJORES_EUROPOOL_ADDRESS) \
+token-balance-of-europool:
+	@echo "Get token balance of europool $(EUROPOOL_ADDRESS) on $(NETWORK_NAME)..."
+	@cast call --rpc-url $(RPC_URL) $(TOKEN_ADDRESS) "balanceOf(address)" $(EUROPOOL_ADDRESS) \
 	-- -vvvv
