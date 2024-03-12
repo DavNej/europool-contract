@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: deploy fund-europool token-balance-of-deployer token-balance-of-europool
+.PHONY: help all clean remove install update build anvil show-config deploy-command fund-europool token-balance-of-deployer token-balance-of-europool
 
 help:
 	@echo "Usage:"
@@ -28,9 +28,10 @@ anvil:
 ## Deploy rules
 NETWORK_NAME := ""
 NETWORK_ARGS := ""
-DEPLOY_ARGS := "--keystore devDeployer"
-VERIFY_ARGS := ""
 RPC_URL := ""
+DEPLOYER_ADDRESS := $(TESNET_DEPLOYER_ADDRESS)
+KEYSTORE_ARGS := "--account devDeployer --password-file .passwords/devDeployer.txt --sender $(DEPLOYER_ADDRESS)"
+VERIFY_ARGS := ""
 TOKEN_ADDRESS := ""
 EUROPOOL_ADDRESS := ""
 
@@ -68,13 +69,24 @@ ifeq ($(strip $(ARGS)),)
 	NETWORK_NAME := "Anvil"
 	NETWORK_ARGS := "--rpc-url $(ANVIL_RPC_URL) --private-key $(ANVIL_DEPLOYER_PRIVATE_KEY)"
 	VERIFY_ARGS := ""
-	DEPLOY_ARGS := ""
+	KEYSTORE_ARGS := ""
+	DEPLOYER_ADDRESS := $(ANVIL_DEPLOYER_ADDRESS)
 endif
 
 
-deploy:
-	@echo "Deploying contracts to $(NETWORK_NAME)..."
-	@forge script script/DeployEuroPool.s.sol $(NETWORK_ARGS) --broadcast $(VERIFY_ARGS) $(DEPLOY_ARGS) -vvvv
+show-config:
+	@echo "NETWORK_NAME:\t\t$(NETWORK_NAME)"
+	@echo "RPC_URL:\t\t$(RPC_URL)"
+	@echo "NETWORK_ARGS:\t\t$(NETWORK_ARGS)"
+	@echo "DEPLOYER_ADDRESS:\t$(DEPLOYER_ADDRESS)"
+	@echo "KEYSTORE_ARGS:\t\t$(KEYSTORE_ARGS)"
+	@echo "VERIFY_ARGS:\t\t$(VERIFY_ARGS)"
+	@echo "TOKEN_ADDRESS:\t\t$(TOKEN_ADDRESS)"
+	@echo "EUROPOOL_ADDRESS:\t\t$(EUROPOOL_ADDRESS)"
+
+deploy-command:
+	@echo "Generate deploy command for $(NETWORK_NAME)..."
+	@echo "forge script script/DeployEuroPool.s.sol $(NETWORK_ARGS) $(KEYSTORE_ARGS) --broadcast $(VERIFY_ARGS) -vvvv"
 
 ## Fund EuroPool rules
 fund-europool:
