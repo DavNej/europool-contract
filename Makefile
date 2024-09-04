@@ -14,7 +14,7 @@ help:
 all: clean remove install update build
 clean :; forge clean
 remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "remove modules"
-install :; forge install foundry-rs/forge-std && forge install OpenZeppelin/openzeppelin-contracts@v5.0.1
+install :; forge install foundry-rs/forge-stdv1.9.2 && forge install OpenZeppelin/openzeppelin-contracts@v5.0.1
 update:; forge update
 build:
 	@echo "Building contracts..."
